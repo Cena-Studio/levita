@@ -481,11 +481,12 @@ class Levita{
          */
         this.rebound = levitaConfig.rebound;
 
-        this.#setSubjectStyle();
         this.#renderFilterSvg();
         this.#renderGlareWrapper();
 
+        this.#setSubjectStyle();
         this.#resetPercentageDistance();
+        this.#resetShadowStyle();
 
         this.#bindBasicEvent();
         this.#bindTiltEvent();
