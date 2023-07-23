@@ -7,15 +7,6 @@
  * 
  */
 
-//transition指定属性
-
-/**
- * @typedef LevitaConfig
- * @property {number} amplitude
- * @property {number} glare
- * @property {string} material
- */
-
 /**
  * @class
  */
@@ -68,6 +59,11 @@ class LevitaConfig{
         this.material = LevitaConfig.#standardizeMaterial(arg.material);
 
         /**
+         * @type {string}
+         */
+        this.shadow = LevitaConfig.#standardizeShadow(arg.shadow);
+
+        /**
          * @type {boolean}
          */
         this.reverse = LevitaConfig.#standardizeReverse(arg.reverse);
@@ -94,6 +90,7 @@ class LevitaConfig{
             "glare": "default",
             "zoom": "default",
             "material": "default",
+            "shadow": "default",
             "reverse": "default",
             "rebound": "default"
         };
@@ -127,6 +124,10 @@ class LevitaConfig{
 
         if(arg.hasOwnProperty("material")){
             preprocessedArg.material = arg.material;
+        }
+
+        if(arg.hasOwnProperty("shadow")){
+            preprocessedArg.shadow = arg.shadow;
         }
 
         if(arg.hasOwnProperty("reverse")){
@@ -340,6 +341,32 @@ class LevitaConfig{
     }
 
     /**
+     * Convert the shadow parameter to a standard shadow value.
+     * @private
+     * @memberof LevitaConfig
+     * @param {string} shadow
+     * @returns {string} The standardized shadow.
+     * 
+     */
+    static #standardizeShadow(shadow) {
+
+        let size = "18";
+        let mode = "hover";
+        
+        if(shadow.includes("always")){
+            mode = "always";
+        }
+        
+        const sizes = shadow.match(/\d+/);
+        if(sizes !== null){
+            size = sizes[0];
+        }
+
+        return size + " " + mode;
+
+    }
+
+    /**
      * Convert the reverse parameter to a standard reverse value.
      * @private
      * @memberof LevitaConfig
@@ -433,6 +460,17 @@ class Levita{
          */
         this.material = levitaConfig.material;
 
+
+        const shadowParams = levitaConfig.shadow.split(" ");
+        /**
+         * @type {number}
+         */
+        this.shadowSize = parseInt(shadowParams[0]);
+        /**
+         * @type {string}
+         */
+        this.shadowMode = shadowParams[1];
+
         /**
          * @type {boolean}
          */
@@ -451,6 +489,7 @@ class Levita{
 
         this.#bindBasicEvent();
         this.#bindTiltEvent();
+        this.#bindShadowEvent();
         this.#bindGlareEvent();
         
     }
@@ -632,6 +671,13 @@ class Levita{
         }
     }
 
+    #bindShadowEvent(){
+        this.subject.addEventListener('mousemove', this.#setShadowStyle.bind(this));
+        if(this.rebound){
+            this.subject.addEventListener('mouseleave', this.#resetShadowStyle.bind(this));
+        }
+    }
+
     #bindGlareEvent(){
         this.subject.addEventListener('mousemove', this.#setGlareStyle.bind(this));
         if(this.rebound){
@@ -661,7 +707,7 @@ class Levita{
      */
     #setNormalDistance(mouPosX, mouPosY){
         this.percentageDisX = (mouPosX - this.centerX) / this.halfWidth;
-        this.percentageDisY = (this.centerY - mouPosY) / this.halfHeight;
+        this.percentageDisY = (mouPosY - this.centerY) / this.halfHeight;
     }
 
     /**
@@ -671,7 +717,7 @@ class Levita{
      */
     #setReversedDistance(mouPosX, mouPosY){
         this.percentageDisX = (this.centerX - mouPosX) / this.halfWidth;
-        this.percentageDisY = (mouPosY - this.centerY) / this.halfHeight;
+        this.percentageDisY = (this.centerY - mouPosY) / this.halfHeight;
     }
 
     #setTiltStyle(){
@@ -683,11 +729,10 @@ class Levita{
             this.#setBothTiltStyle();
         }
 
-        this.subject.style.boxShadow = '18px 18px 36px 0 #00000080';
     }
 
     #calcTilDegX(){
-        return - this.percentageDisY * this.amplitude;
+        return this.percentageDisY * this.amplitude;
     }
 
     #calcTilDegY(){
@@ -704,6 +749,13 @@ class Levita{
 
     #setBothTiltStyle(){
         this.subject.style.transform = 'perspective(120vw) rotateX(' + this.#calcTilDegX() + 'deg) rotateY(' + this.#calcTilDegY() + 'deg) scale(' + this.zoom + ')';
+    }
+
+    #setShadowStyle(){
+        const shadowDisX = (this.percentageDisX + 1) * this.shadowSize / 2;
+        const shadowDisY = (this.percentageDisY + 1) * this.shadowSize / 2;
+        const shadowBlur = (this.percentageDisX + this.percentageDisY + 2) * this.shadowSize / 4  + this.shadowSize;
+        this.subject.style.boxShadow = shadowDisX + 'px ' + shadowDisY + 'px ' + shadowBlur + 'px 0 #00000080';
     }
 
     #setGlareStyle(){
@@ -727,8 +779,8 @@ class Levita{
     }
 
     #setVerticalGlareStyle(){
-        const rightGlareTransform = - this.percentageDisY * 25;
-        const bottomGlareOpacity = Math.sqrt((1 - this.percentageDisY) * this.glare / 2);
+        const rightGlareTransform = this.percentageDisY * 25;
+        const bottomGlareOpacity = Math.sqrt((this.percentageDisY + 1) * this.glare / 2);
         const rightGlareOpacity = Math.sqrt(0.5);
         this.rightGlare.style.transform = 'translateY(' + rightGlareTransform + '%)';
         this.bottomGlare.style.opacity = bottomGlareOpacity;
@@ -737,8 +789,8 @@ class Levita{
 
     #setBothGlareStyle(){
         const bottomGlareTransform = this.percentageDisX * 25;
-        const rightGlareTransform = - this.percentageDisY * 25;
-        const bottomGlareOpacity = Math.sqrt((1 - this.percentageDisY) * this.glare / 2);
+        const rightGlareTransform = this.percentageDisY * 25;
+        const bottomGlareOpacity = Math.sqrt((this.percentageDisY + 1) * this.glare / 2);
         const rightGlareOpacity = Math.sqrt((this.percentageDisX + 1) * this.glare / 2);
 
         this.bottomGlare.style.transform = 'translateX(' + bottomGlareTransform + '%)';
@@ -750,7 +802,14 @@ class Levita{
 
     #resetTiltStyle(){
         this.subject.style.transform = 'none';
-        this.subject.style.boxShadow = '0 0 0 0 #00000000';
+    }
+
+    #resetShadowStyle(){
+        if(this.shadowMode === "hover"){
+            this.subject.style.boxShadow = '0 0 0 0 #00000000';
+        }else{
+            this.subject.style.boxShadow = '0 0 ' + this.shadowSize + 'px 0 #00000080';
+        }
     }
 
     #resetGlareStyle(){
