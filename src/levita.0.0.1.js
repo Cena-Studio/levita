@@ -624,7 +624,14 @@ class Levita{
             filtersWrapper.id = "js_levita_filters";
             filtersWrapper.setAttribute("width", "0");
             filtersWrapper.setAttribute("height", "0");
-            filtersWrapper.innerHTML = "<defs><filter id='js_levita_noise_filter'><feTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='5'/><feColorMatrix type='saturate' values='0'/></filter><filter id='js_levita_mask_filter'><feColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.299 0.587 0.114 0 0'/></filter></defs>";
+            filtersWrapper.innerHTML = "<defs>" +
+                        "<filter id='js_levita_noise_filter'>" + 
+                            "<feTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='5'/>" +
+                        "</filter>" +
+                        "<filter id='js_levita_mask_filter'>" +
+                            "<feColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.2126 0.7152 0.0722 0 0'/>" +
+                        "</filter>" +
+                    "</defs>"
             document.body.appendChild(filtersWrapper);
         }
     }
